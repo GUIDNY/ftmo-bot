@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTMO Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F0F13;--card:#17171E;--border:#2A2A35;
+  --text:#F0F0F5;--text2:#888;
+  --green:#22C55E;--red:#EF4444;--gold:#F59E0B;
+  --blue:#3B82F6;
+}
+body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+header{
+  padding:20px 32px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.logo{font-size:18px;font-weight:800;letter-spacing:-0.5px}
+.logo span{color:var(--gold)}
+.status{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+main{max-width:1100px;margin:0 auto;padding:28px 24px}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 18px}
+.stat-label{font-size:12px;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.stat-val{font-size:28px;font-weight:800;line-height:1}
+.stat-val.green{color:var(--green)}
+.stat-val.red{color:var(--red)}
+.stat-val.gold{color:var(--gold)}
+
+/* Progress bar */
+.progress-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 18px;margin-bottom:24px}
+.progress-label{font-size:13px;color:var(--text2);margin-bottom:8px;display:flex;justify-content:space-between}
+.bar-wrap{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:16px}
+.bar{height:100%;border-radius:4px;transition:width .6s ease}
+.bar.green{background:var(--green)}
+.bar.red{background:var(--red)}
+.bar.gold{background:var(--gold)}
+
+/* Table */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.table-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.table-title{font-size:14px;font-weight:700}
+.badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;padding:12px 20px;text-align:right;border-bottom:1px solid var(--border)}
+td{padding:14px 20px;font-size:13px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+.dir-long{color:var(--green);font-weight:700}
+.dir-short{color:var(--red);font-weight:700}
+.result-pass{color:var(--green)}
+.result-fail{color:var(--red)}
+
+.fail-reason{font-size:11px;color:var(--text2);margin-top:2px}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+
+/* Answers tooltip */
+.answers-list{font-size:11px;color:var(--text2);line-height:1.8}
+.ans-pass::before{content:"✓ ";color:var(--green)}
+.ans-fail::before{content:"✗ ";color:var(--red)}
+
+@media(max-width:768px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  th:nth-child(n+4),td:nth-child(n+4){display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">FTMO <span>Journal</span></div>
+  <div class="status"><div class="dot"></div><span id="lastSync">טוען...</span></div>
+</header>
+
+<main>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">סה"כ עסקות</div>
+      <div class="stat-val" id="sTotal">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">אחוז אישור</div>
+      <div class="stat-val gold" id="sPassRate">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">נכנסו לשוק</div>
+      <div class="stat-val green" id="sPassed">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">נדחו</div>
+      <div class="stat-val red" id="sFailed">—</div>
+    </div>
+  </div>
+
+  <!-- Fail reasons breakdown -->
+  <div class="progress-card" id="failSection" style="display:none">
+    <div style="font-size:14px;font-weight:700;margin-bottom:16px">סיבות דחייה</div>
+    <div id="failBreakdown"></div>
+  </div>
+
+  <!-- Trade log -->
+  <div class="table-card">
+    <div class="table-hd">
+      <span class="table-title">יומן עסקות</span>
+      <span id="tradeCount" class="badge badge-green">0 עסקות</span>
+    </div>
+    <div id="tableBody"></div>
+  </div>
+</main>
+
+<script>
+const FAIL_LABELS = {
+  dailyTrend: "מגמת Daily",
+  srLevel: "רמת S/R",
+  candleConfirm: "אישור נר",
+  stopLogical: "סטופ הגיוני",
+  rrRatio: "יחס R:R",
+  noNews: "חדשות אדומות",
+};
+
+const Q_LABELS = {
+  dailyTrend: "מגמת Daily",
+  srLevel: "רמת S/R",
+  candleConfirm: "אישור נר",
+  stopLogical: "סטופ הגיוני",
+  rrRatio: "R:R ≥ 1:2",
+  noNews: "ללא חדשות",
+};
+
+async function load() {
+  try {
+    const res = await fetch("/api/trades");
+    const trades = await res.json();
+    render(trades);
+    document.getElementById("lastSync").textContent = "עדכון " + new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+  } catch(e) { console.error(e); }
+}
+
+function render(trades) {
+  const total = trades.length;
+  const passed = trades.filter(t => t.passed).length;
+  const failed = total - passed;
+  const passRate = total ? Math.round(passed/total*100) : 0;
+
+  document.getElementById("sTotal").textContent = total;
+  document.getElementById("sPassRate").textContent = passRate + "%";
+  document.getElementById("sPassed").textContent = passed;
+  document.getElementById("sFailed").textContent = failed;
+  document.getElementById("tradeCount").textContent = total + " עסקות";
+
+  // Fail breakdown
+  if (failed > 0) {
+    document.getElementById("failSection").style.display = "block";
+    const counts = {};
+    trades.filter(t => !t.passed && t.failedAt).forEach(t => {
+      counts[t.failedAt] = (counts[t.failedAt] || 0) + 1;
+    });
+    document.getElementById("failBreakdown").innerHTML = Object.entries(counts)
+      .sort((a,b) => b[1]-a[1])
+      .map(([key, count]) => {
+        const pct = Math.round(count/failed*100);
+        return `<div style="margin-bottom:12px">
+          <div class="progress-label">
+            <span>${FAIL_LABELS[key] || key}</span>
+            <span style="color:var(--red)">${count}x</span>
+          </div>
+          <div class="bar-wrap"><div class="bar red" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join("");
+  }
+
+  // Table
+  const tbody = document.getElementById("tableBody");
+  if (!trades.length) {
+    tbody.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>אין עסקות עדיין<br><small>שלח "עסקה חדשה" לבוט כדי להתחיל</small></p></div>`;
+    return;
+  }
+
+  const sorted = [...trades].sort((a,b) => new Date(b.date)-new Date(a.date));
+  const rows = sorted.map(t => {
+    const date = new Date(t.date).toLocaleDateString("he-IL",{day:"2-digit",month:"2-digit",year:"2-digit"});
+    const time = new Date(t.date).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+    const dir = t.direction === "long"
+      ? `<span class="dir-long">▲ לונג</span>`
+      : `<span class="dir-short">▼ שורט</span>`;
+    const result = t.passed
+      ? `<span class="result-pass">✅ אושר</span>`
+      : `<span class="result-fail">🛑 נדחה</span>`;
+    const reason = !t.passed && t.failedAt
+      ? `<div class="fail-reason">${FAIL_LABELS[t.failedAt] || t.failedAt}</div>` : "";
+    const answers = t.answers ? Object.entries(t.answers).map(([k,v]) => {
+      const cls = v.passed ? "ans-pass" : "ans-fail";
+      return `<div class="${cls}">${Q_LABELS[k]||k}: ${v.value}</div>`;
+    }).join("") : "";
+
+    return `<tr>
+      <td>${date}<br><small style="color:var(--text2)">${time}</small></td>
+      <td>${dir}</td>
+      <td>${result}${reason}</td>
+      <td><div class="answers-list">${answers}</div></td>
+    </tr>`;
+  }).join("");
+
+  tbody.innerHTML = `<table>
+    <thead><tr><th>תאריך</th><th>כיוון</th><th>תוצאה</th><th>פירוט</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>

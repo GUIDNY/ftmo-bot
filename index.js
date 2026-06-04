@@ -325,6 +325,9 @@ async function askGeminiVision(base64, mimeType) {
 }
 
 async function handleImage(from, mediaId) {
+  // Send immediate acknowledgment so user knows bot is working
+  await send(from, "🔍 מנתח את הגרף... רגע אחד");
+
   try {
     // 1. Get media URL
     const mediaRes = await axios.get(

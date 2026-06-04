@@ -90,7 +90,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <div class="table-card">
     <div class="table-hd">
       <span class="table-title">יומן עסקות</span>
-      <span id="tradeCount" class="badge badge-green">0 עסקות</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="tradeCount" class="badge badge-green">0 עסקות</span>
+        <a href="/api/export" download="ftmo-journal.csv" style="font-size:12px;color:var(--gold);text-decoration:none;border:1px solid var(--gold);padding:3px 10px;border-radius:100px">⬇ CSV</a>
+      </div>
     </div>
     <div id="tableBody"></div>
   </div>

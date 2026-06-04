@@ -511,6 +511,89 @@ app.post("/webhook", async (req, res) => {
 // ─── API ──────────────────────────────────────────────────────────────────────
 app.get("/api/trades", (req, res) => res.json(loadJournal().trades));
 
+// ─── MT5 Bridge API ───────────────────────────────────────────────────────────
+const MT5_API_KEY = "ftmo_bridge_2024";
+
+function mt5Auth(req, res) {
+  if (req.body.key !== MT5_API_KEY) { res.status(401).json({ error: "unauthorized" }); return false; }
+  return true;
+}
+
+app.post("/api/mt5/trade-opened", async (req, res) => {
+  res.json({ ok: true });
+  if (!mt5Auth(req, res)) return;
+  const { phone, pair, direction, entry, sl, tp, volume } = req.body;
+  if (!phone) return;
+
+  await send(phone,
+    `🔔 *עסקה נפתחה ב-MT5!*\n\n` +
+    `${pair} | ${direction === "לונג" ? "📈" : "📉"} ${direction}\n` +
+    `כניסה: ${entry} | SL: ${sl} | TP: ${tp}\n` +
+    `נפח: ${volume} lots\n\n` +
+    `⚠️ _עשית צ'קליסט לפני הכניסה?_\n` +
+    `שלח *כן* לרישום ביומן או *לא* לתיעוד הפרה.`
+  );
+
+  // Save to journal as pending
+  const journal = loadJournal();
+  journal.trades.push({
+    id: req.body.ticket?.toString() || randomUUID(),
+    date: new Date().toISOString(),
+    source: "mt5",
+    pair, trend: direction === "לונג" ? "עולה" : "יורד",
+    entry, sl, tp, volume,
+    checklistPassed: null,
+    result: null, lesson: null,
+  });
+  saveJournal(journal);
+  console.log(`[MT5] Trade opened: ${pair} ${direction}`);
+});
+
+app.post("/api/mt5/trade-closed", async (req, res) => {
+  res.json({ ok: true });
+  if (!mt5Auth(req, res)) return;
+  const { phone, pair, profit, ticket } = req.body;
+
+  // Update journal
+  const journal = loadJournal();
+  const trade = journal.trades.find(t => t.id === ticket?.toString());
+  if (trade) {
+    trade.result = parseFloat(profit.toFixed(2));
+    trade.closedAt = new Date().toISOString();
+    saveJournal(journal);
+  }
+
+  if (!phone) return;
+  const emoji = profit >= 0 ? "🏆" : "💔";
+  await send(phone,
+    `${emoji} *עסקה נסגרה: ${pair}*\n\n` +
+    `תוצאה: ${profit >= 0 ? "+" : ""}$${parseFloat(profit).toFixed(2)}\n\n` +
+    `📝 מה למדת מהעסקה הזו?`
+  );
+
+  // Store phone for lesson follow-up
+  if (phone) sessions[phone] = { step: "closure_lesson", result: parseFloat(profit.toFixed(2)), lastTradeId: ticket?.toString() };
+  console.log(`[MT5] Trade closed: ${pair} P&L: ${profit}`);
+});
+
+app.post("/api/mt5/alert", async (req, res) => {
+  res.json({ ok: true });
+  if (!mt5Auth(req, res)) return;
+  const { phone, message } = req.body;
+  if (phone && message) await send(phone, message);
+  console.log(`[MT5] Alert: ${message}`);
+});
+
+app.post("/api/mt5/account-update", (req, res) => {
+  res.json({ ok: true });
+  if (!mt5Auth(req, res)) return;
+  const { balance, equity, profit } = req.body;
+  const journal = loadJournal();
+  journal.account = { balance, equity, profit, updatedAt: new Date().toISOString() };
+  saveJournal(journal);
+  console.log(`[MT5] Account: balance=${balance} equity=${equity}`);
+});
+
 app.get("/api/export", (req, res) => {
   const { trades } = loadJournal();
   const headers = ["תאריך","זוג","כיוון","כניסה","SL","TP","R:R","סיכון%","סשן","תוצאה","לקח","עבר_צ'קליסט"];

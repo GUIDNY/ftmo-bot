@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const { WHATSAPP_TOKEN, PHONE_NUMBER_ID, VERIFY_TOKEN, PORT = 3001 } = process.env;
+const { WHATSAPP_TOKEN, PHONE_NUMBER_ID, VERIFY_TOKEN, GEMINI_KEY, PORT = 3001 } = process.env;
 const JOURNAL_FILE = path.join(__dirname, "data/journal.json");
 
 // ─── Journal ──────────────────────────────────────────────────────────────────
@@ -298,6 +298,84 @@ async function handleMessage(from, text) {
   );
 }
 
+// ─── Gemini Vision (chart analysis) ────────────────────────────────────────────
+async function askGeminiVision(base64, mimeType) {
+  try {
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: mimeType, data: base64 } },
+            { text: `אתה סוחר בפורקס. קרא את הגרף הזה וחלץ מידע.
+החזר JSON בדיוק כזה (ללא markdown):
+{"pair":"זוג/חוזה","trend":"עולה או יורד","support":"רמת תמיכה","resistance":"רמת התנגדות","entry":"כניסה משוערת","sl":"סטופ לוס משוער","tp":"טייק פרופיט משוער","timeframe":"timeframe של הגרף"}
+אם לא סוגריך לקרוא את הגרף: {"error":"לא הצלחתי לקרוא את הגרף"}` }
+          ]
+        }]
+      }
+    );
+    const raw = res.data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    console.log("Gemini response:", raw);
+    return JSON.parse(raw.replace(/```json\n?|\n?```/g, "").trim());
+  } catch (e) {
+    console.error("Gemini Vision error:", e.message);
+    return { error: "בעיה בניתוח הגרף" };
+  }
+}
+
+async function handleImage(from, mediaId) {
+  try {
+    // 1. Get media URL
+    const mediaRes = await axios.get(
+      `https://graph.facebook.com/v25.0/${mediaId}`,
+      { headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` } }
+    );
+    const mediaUrl = mediaRes.data.url;
+
+    // 2. Download as base64
+    const imgRes = await axios.get(mediaUrl, {
+      responseType: "arraybuffer",
+      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` }
+    });
+    const base64 = Buffer.from(imgRes.data).toString("base64");
+    const mimeType = imgRes.headers["content-type"] || "image/jpeg";
+
+    // 3. Analyze with Gemini Vision
+    const analysis = await askGeminiVision(base64, mimeType);
+
+    if (analysis.error) {
+      return send(from, `❌ ${analysis.error}\n\nשלח *עסקה חדשה* להתחיל צ'קליסט ידני.`);
+    }
+
+    // 4. Pre-fill checklist with analysis
+    sessions[from] = {
+      step: "cl_0",
+      answers: {
+        pair: analysis.pair || "לא ידוע",
+        trend: /עול|up/i.test(analysis.trend) ? "עולה" : "יורד",
+      },
+      suggestedEntry: analysis.entry,
+      suggestedSl: analysis.sl,
+      suggestedTp: analysis.tp,
+    };
+
+    return send(from,
+      `📊 *ניתחתי את הגרף:*\n\n` +
+      `זוג: *${analysis.pair}*\n` +
+      `מגמה: ${/עול|up/i.test(analysis.trend) ? "📈 עולה" : "📉 יורד"}\n` +
+      `תמיכה: ${analysis.support || "—"}\n` +
+      `התנגדות: ${analysis.resistance || "—"}\n` +
+      `TP משוער: ${analysis.tp || "—"}\n\n` +
+      `_הניתוח הוא הצעה — בואו נעבור צ'קליסט:_\n\n` +
+      `${CHECKLIST_STEPS[0].q}`
+    );
+  } catch (e) {
+    console.error("Image handling error:", e.message);
+    send(from, `❌ בעיה בקריאת התמונה.\n\nשלח *עסקה חדשה* להתחיל צ'קליסט ידני.`);
+  }
+}
+
 // ─── Webhook ──────────────────────────────────────────────────────────────────
 app.get("/webhook", (req, res) => {
   if (req.query["hub.mode"] === "subscribe" && req.query["hub.verify_token"] === VERIFY_TOKEN) {
@@ -312,9 +390,8 @@ app.post("/webhook", async (req, res) => {
   if (!message) return;
 
   if (message.type === "image") {
-    return send(message.from,
-      `📊 אני לא מנתח גרפים.\n\nהניתוח הוא העבודה שלך — זה היתרון שלך על הבוטים.\n\nשלח *עסקה חדשה* כשאתה מוכן לעבור צ'קליסט.`
-    );
+    console.log(`[${new Date().toLocaleTimeString("he-IL")}] ${message.from}: תמונה`);
+    return handleImage(message.from, message.image.id);
   }
 
   if (message.type !== "text") return;

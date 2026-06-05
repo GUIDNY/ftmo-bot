@@ -13,6 +13,20 @@
       "checklistPassed": null,
       "result": null,
       "lesson": null
+    },
+    {
+      "id": "465466014",
+      "date": "2026-06-05T12:03:05.710Z",
+      "source": "mt5",
+      "pair": "USDJPY",
+      "trend": "יורד",
+      "entry": 159.866,
+      "sl": 0,
+      "tp": 0,
+      "volume": 0.02,
+      "checklistPassed": null,
+      "result": null,
+      "lesson": null
     }
   ]
 }

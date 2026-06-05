@@ -24,10 +24,11 @@
       "sl": 0,
       "tp": 0,
       "volume": 0.02,
-      "checklistPassed": null,
+      "checklistPassed": true,
       "result": null,
       "lesson": null,
-      "whyEntered": "בדיקה"
+      "whyEntered": "בדיקה",
+      "plan": "אין"
     }
   ]
 }

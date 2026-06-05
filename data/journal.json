@@ -26,7 +26,8 @@
       "volume": 0.02,
       "checklistPassed": null,
       "result": null,
-      "lesson": null
+      "lesson": null,
+      "whyEntered": "בדיקה"
     }
   ]
 }

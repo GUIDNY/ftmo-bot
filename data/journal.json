@@ -80,10 +80,11 @@
       "tp": 1.16456,
       "volume": 2,
       "checklistPassed": true,
-      "result": null,
+      "result": -618,
       "lesson": null,
       "whyEntered": "הייתה ירידה מאוד מאוד חדה",
-      "plan": "רשום לך"
+      "plan": "רשום לך",
+      "closedAt": "2026-06-05T13:00:05.938Z"
     }
   ]
 }

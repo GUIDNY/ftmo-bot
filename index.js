@@ -43,12 +43,12 @@ const sessions = {};
 let ownerPhone = OWNER_PHONE || "972547701899";
 function getState(from) { return sessions[from] || { step: "idle" }; }
 
-// Dedup: ignore same ticket within 10 seconds
+// Dedup: ignore same event within 30 seconds
 const recentTickets = new Map();
-function isDuplicate(ticket) {
-  const key = String(ticket);
+function isDuplicate(key) {
+  key = String(key);
   const now = Date.now();
-  if (recentTickets.has(key) && now - recentTickets.get(key) < 10000) return true;
+  if (recentTickets.has(key) && now - recentTickets.get(key) < 30000) return true;
   recentTickets.set(key, now);
   return false;
 }
@@ -586,7 +586,7 @@ app.post("/api/mt5/trade-closed", async (req, res) => {
   res.json({ ok: true });
   if (!mt5Auth(req, res)) return;
   const { phone, pair, profit, ticket } = req.body;
-  if (isDuplicate(`close_${ticket}`)) return;
+  if (isDuplicate(`close_${ticket}_${Math.round(profit*100)}`)) return;
 
   const pnl = parseFloat(parseFloat(profit).toFixed(2));
   const tradeId = ticket?.toString();

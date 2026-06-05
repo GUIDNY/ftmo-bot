@@ -25,10 +25,11 @@
       "tp": 0,
       "volume": 0.02,
       "checklistPassed": true,
-      "result": null,
+      "result": -0.24,
       "lesson": null,
       "whyEntered": "בדיקה",
-      "plan": "אין"
+      "plan": "אין",
+      "closedAt": "2026-06-05T12:03:51.066Z"
     },
     {
       "id": "465446930",

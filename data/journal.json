@@ -113,10 +113,11 @@
       "sl": 1.15568,
       "tp": 1.16295,
       "volume": 2,
-      "checklistPassed": null,
+      "checklistPassed": true,
       "result": null,
       "lesson": null,
-      "whyEntered": "ירידהקיצונית"
+      "whyEntered": "ירידהקיצונית",
+      "plan": "ללעבוד על גובה יותר פחות על עמות"
     }
   ]
 }

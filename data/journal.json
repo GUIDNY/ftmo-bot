@@ -53,6 +53,20 @@
       "result": -0.16,
       "lesson": null,
       "closedAt": "2026-06-05T12:09:05.478Z"
+    },
+    {
+      "id": "465474354",
+      "date": "2026-06-05T12:11:10.662Z",
+      "source": "mt5",
+      "pair": "USDJPY",
+      "trend": "יורד",
+      "entry": 159.86,
+      "sl": 0,
+      "tp": 0,
+      "volume": 0.02,
+      "checklistPassed": null,
+      "result": null,
+      "lesson": null
     }
   ]
 }

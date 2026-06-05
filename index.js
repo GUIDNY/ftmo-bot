@@ -586,19 +586,26 @@ app.post("/api/mt5/trade-closed", async (req, res) => {
   res.json({ ok: true });
   if (!mt5Auth(req, res)) return;
   const { phone, pair, profit, ticket } = req.body;
-  if (isDuplicate(`close_${ticket}_${Math.round(profit*100)}`)) return;
 
   const pnl = parseFloat(parseFloat(profit).toFixed(2));
   const tradeId = ticket?.toString();
 
-  // Update journal
+  // Journal-based dedup — skip if already closed
   const journal = loadJournal();
   const trade = journal.trades.find(t => t.id === tradeId);
+  if (trade?.closedAt) return; // already processed
+
   if (trade) {
     trade.result = pnl;
     trade.closedAt = new Date().toISOString();
-    saveJournal(journal);
+  } else {
+    journal.trades.push({
+      id: tradeId, date: new Date().toISOString(),
+      source: "mt5", pair, result: pnl,
+      closedAt: new Date().toISOString(),
+    });
   }
+  saveJournal(journal);
 
   const target = phone || ownerPhone;
   if (!target) return;

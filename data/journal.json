@@ -98,7 +98,8 @@
       "volume": 3,
       "checklistPassed": null,
       "result": null,
-      "lesson": null
+      "lesson": null,
+      "whyEntered": "כי היה נר היפוך"
     }
   ]
 }

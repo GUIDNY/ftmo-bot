@@ -12,19 +12,42 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const {
   WHATSAPP_TOKEN, PHONE_NUMBER_ID, VERIFY_TOKEN,
-  GEMINI_KEY, NEWS_API_KEY, OWNER_PHONE, PORT = 3001
+  GEMINI_KEY, NEWS_API_KEY, OWNER_PHONE, GITHUB_TOKEN, PORT = 3001
 } = process.env;
 
-const JOURNAL_FILE = path.join(__dirname, "data/journal.json");
+const GITHUB_REPO = "GUIDNY/ftmo-bot";
+const GITHUB_FILE = "data/journal.json";
+let journalCache = null;
+let journalSha = null;
 
-// ─── Journal ──────────────────────────────────────────────────────────────────
-function loadJournal() {
-  try { return JSON.parse(fs.readFileSync(JOURNAL_FILE, "utf8")); }
-  catch { return { trades: [] }; }
+// ─── Journal (GitHub persistent storage) ─────────────────────────────────────
+async function loadJournal() {
+  try {
+    const res = await axios.get(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`,
+      { headers: { Authorization: `token ${GITHUB_TOKEN}`, "User-Agent": "ftmo-bot" } }
+    );
+    journalSha = res.data.sha;
+    const data = JSON.parse(Buffer.from(res.data.content, "base64").toString("utf8"));
+    journalCache = data;
+    return data;
+  } catch {
+    return journalCache || { trades: [] };
+  }
 }
-function saveJournal(data) {
-  try { fs.writeFileSync(JOURNAL_FILE, JSON.stringify(data, null, 2)); }
-  catch (e) { console.error("Save error:", e.message); }
+
+async function saveJournal(data) {
+  try {
+    journalCache = data;
+    const content = Buffer.from(JSON.stringify(data, null, 2)).toString("base64");
+    const body = { message: "update journal", content, ...(journalSha ? { sha: journalSha } : {}) };
+    const res = await axios.put(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`,
+      body,
+      { headers: { Authorization: `token ${GITHUB_TOKEN}`, "User-Agent": "ftmo-bot" } }
+    );
+    journalSha = res.data.content.sha;
+  } catch (e) { console.error("Save error:", e.message); }
 }
 
 // ─── WhatsApp ─────────────────────────────────────────────────────────────────
@@ -139,7 +162,7 @@ async function finishChecklist(from, answers) {
   const { entry, sl, tp, accountSize, pair, trend } = answers;
 
   // Check daily trade count
-  const todayTrades = loadJournal().trades.filter(t =>
+  const todayTrades = (await loadJournal()).trades.filter(t =>
     t.checklistPassed && new Date(t.date).toDateString() === new Date().toDateString()
   );
   if (todayTrades.length >= 3) {
@@ -163,7 +186,7 @@ async function finishChecklist(from, answers) {
   const session = h >= 10 && h < 13 ? "London" : h >= 15 && h < 19 ? "New York" : h >= 2 && h < 9 ? "Asian" : "Off-hours";
 
   const tradeId = randomUUID();
-  const journal = loadJournal();
+  const journal = await loadJournal();
   journal.trades.push({
     id: tradeId,
     date: new Date().toISOString(),
@@ -175,7 +198,7 @@ async function finishChecklist(from, answers) {
     checklistPassed: true,
     result: null, lesson: null,
   });
-  saveJournal(journal);
+  await saveJournal(journal);
   sessions[from] = { step: "idle", lastTradeId: tradeId };
 
   const dir = trend === "עולה" ? "📈 לונג" : "📉 שורט";
@@ -202,8 +225,8 @@ async function finishChecklist(from, answers) {
   );
 }
 
-function saveFailedTrade(answers, reason) {
-  const journal = loadJournal();
+async function saveFailedTrade(answers, reason) {
+  const journal = await loadJournal();
   journal.trades.push({
     id: randomUUID(),
     date: new Date().toISOString(),
@@ -213,7 +236,7 @@ function saveFailedTrade(answers, reason) {
     failReason: reason,
     result: null,
   });
-  saveJournal(journal);
+  await saveJournal(journal);
 }
 
 // ─── Performance analysis ─────────────────────────────────────────────────────
@@ -254,8 +277,8 @@ function buildPerformanceAnalysis(trades) {
 }
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
-function buildSummary() {
-  const { trades } = loadJournal();
+async function buildSummary() {
+  const { trades } = await loadJournal();
   if (!trades.length) return "אין עסקות ביומן עדיין.";
 
   const completed = trades.filter(t => t.result != null);
@@ -306,7 +329,7 @@ async function sendMorningBriefing() {
       newsText = articles.map((a, i) => `${i + 1}. ${a.title}`).join("\n");
     }
 
-    const journal = loadJournal();
+    const journal = await loadJournal();
     const todayTrades = journal.trades.filter(t =>
       t.checklistPassed && new Date(t.date).toDateString() === new Date().toDateString()
     ).length;
@@ -425,17 +448,17 @@ async function handleMessage(from, text) {
 
   // ── MT5 trade journal flow ──
   if (state.step === "mt5_why") {
-    const journal = loadJournal();
+    const journal = await loadJournal();
     const trade = journal.trades.find(tr => tr.id === state.tradeId);
-    if (trade) { trade.whyEntered = t; saveJournal(journal); }
+    if (trade) { trade.whyEntered = t; await saveJournal(journal); }
     sessions[from] = { ...state, step: "mt5_plan" };
     return send(from, `✓ רשמתי.\n\n📋 מה התוכנית שלך לעסקה הזו?\n_(למשל: TP ב-1.1680, SL ב-1.1610, יוצא אם השעה 17:00)_`);
   }
 
   if (state.step === "mt5_plan") {
-    const journal = loadJournal();
+    const journal = await loadJournal();
     const trade = journal.trades.find(tr => tr.id === state.tradeId);
-    if (trade) { trade.plan = t; trade.checklistPassed = true; saveJournal(journal); }
+    if (trade) { trade.plan = t; trade.checklistPassed = true; await saveJournal(journal); }
     sessions[from] = { step: "idle", lastTradeId: state.tradeId };
     return send(from, `✅ *נשמר ביומן!*\n\n_תן לעסקה לעבוד. אל תזיז סטופ. אל תגדיל פוזיציה._\n\nבהצלחה 🎯`);
   }
@@ -448,14 +471,14 @@ async function handleMessage(from, text) {
   }
 
   if (state.step === "closure_lesson") {
-    const journal = loadJournal();
+    const journal = await loadJournal();
     const trade = state.lastTradeId
       ? journal.trades.find(tr => tr.id === state.lastTradeId)
       : journal.trades.filter(tr => tr.result == null).pop();
     if (trade) {
       trade.lesson = t;
       trade.closedAt = new Date().toISOString();
-      saveJournal(journal);
+      await saveJournal(journal);
     }
     sessions[from] = { step: "idle" };
     return send(from,
@@ -534,7 +557,7 @@ app.post("/webhook", async (req, res) => {
 });
 
 // ─── API ──────────────────────────────────────────────────────────────────────
-app.get("/api/trades", (req, res) => res.json(loadJournal().trades));
+app.get("/api/trades", async (req, res) => res.json((await loadJournal()).trades));
 
 // ─── MT5 Bridge API ───────────────────────────────────────────────────────────
 const MT5_API_KEY = "ftmo_bridge_2024";
@@ -554,7 +577,7 @@ app.post("/api/mt5/trade-opened", async (req, res) => {
   const dir = direction === "לונג" ? "📈 לונג" : "📉 שורט";
 
   // Save to journal
-  const journal = loadJournal();
+  const journal = await loadJournal();
   journal.trades.push({
     id: tradeId,
     date: new Date().toISOString(),
@@ -564,7 +587,7 @@ app.post("/api/mt5/trade-opened", async (req, res) => {
     checklistPassed: null,
     result: null, lesson: null,
   });
-  saveJournal(journal);
+  await saveJournal(journal);
 
   const target = phone || ownerPhone;
   if (!target) return;
@@ -591,7 +614,7 @@ app.post("/api/mt5/trade-closed", async (req, res) => {
   const tradeId = ticket?.toString();
 
   // Journal-based dedup — skip if already closed
-  const journal = loadJournal();
+  const journal = await loadJournal();
   const trade = journal.trades.find(t => t.id === tradeId);
   if (trade?.closedAt) return; // already processed
 
@@ -605,7 +628,7 @@ app.post("/api/mt5/trade-closed", async (req, res) => {
       closedAt: new Date().toISOString(),
     });
   }
-  saveJournal(journal);
+  await saveJournal(journal);
 
   const target = phone || ownerPhone;
   if (!target) return;
@@ -629,18 +652,18 @@ app.post("/api/mt5/alert", async (req, res) => {
   console.log(`[MT5] Alert: ${message}`);
 });
 
-app.post("/api/mt5/account-update", (req, res) => {
+app.post("/api/mt5/account-update", async (req, res) => {
   res.json({ ok: true });
   if (!mt5Auth(req, res)) return;
   const { balance, equity, profit } = req.body;
-  const journal = loadJournal();
+  const journal = await loadJournal();
   journal.account = { balance, equity, profit, updatedAt: new Date().toISOString() };
-  saveJournal(journal);
+  await saveJournal(journal);
   console.log(`[MT5] Account: balance=${balance} equity=${equity}`);
 });
 
-app.get("/api/export", (req, res) => {
-  const { trades } = loadJournal();
+app.get("/api/export", async (req, res) => {
+  const { trades } = await loadJournal();
   const headers = ["תאריך","זוג","כיוון","כניסה","SL","TP","R:R","סיכון%","סשן","תוצאה","לקח","עבר_צ'קליסט"];
   const rows = trades.map(t => [
     new Date(t.date).toLocaleDateString("he-IL"),

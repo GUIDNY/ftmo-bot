@@ -114,10 +114,11 @@
       "tp": 1.16295,
       "volume": 2,
       "checklistPassed": true,
-      "result": null,
+      "result": -514,
       "lesson": null,
       "whyEntered": "ירידהקיצונית",
-      "plan": "ללעבוד על גובה יותר פחות על עמות"
+      "plan": "ללעבוד על גובה יותר פחות על עמות",
+      "closedAt": "2026-06-05T22:41:52.935Z"
     }
   ]
 }

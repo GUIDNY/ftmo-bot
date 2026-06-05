@@ -68,6 +68,20 @@
       "result": -0.19,
       "lesson": null,
       "closedAt": "2026-06-05T12:11:25.564Z"
+    },
+    {
+      "id": "465521044",
+      "date": "2026-06-05T12:35:55.786Z",
+      "source": "mt5",
+      "pair": "EURUSD",
+      "trend": "יורד",
+      "entry": 1.16158,
+      "sl": 1.1601,
+      "tp": 1.16456,
+      "volume": 2,
+      "checklistPassed": null,
+      "result": null,
+      "lesson": null
     }
   ]
 }

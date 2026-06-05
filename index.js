@@ -40,9 +40,18 @@ async function send(to, text) {
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
 const sessions = {};
-// Store owner phone from first message if not set in env
 let ownerPhone = OWNER_PHONE || "972547701899";
 function getState(from) { return sessions[from] || { step: "idle" }; }
+
+// Dedup: ignore same ticket within 10 seconds
+const recentTickets = new Map();
+function isDuplicate(ticket) {
+  const key = String(ticket);
+  const now = Date.now();
+  if (recentTickets.has(key) && now - recentTickets.get(key) < 10000) return true;
+  recentTickets.set(key, now);
+  return false;
+}
 
 // ─── Checklist steps ──────────────────────────────────────────────────────────
 const CHECKLIST_STEPS = [
@@ -539,6 +548,7 @@ app.post("/api/mt5/trade-opened", async (req, res) => {
   res.json({ ok: true });
   if (!mt5Auth(req, res)) return;
   const { phone, pair, direction, entry, sl, tp, volume, ticket } = req.body;
+  if (isDuplicate(`open_${ticket}`)) return;
 
   const tradeId = ticket?.toString() || randomUUID();
   const dir = direction === "לונג" ? "📈 לונג" : "📉 שורט";
@@ -576,6 +586,7 @@ app.post("/api/mt5/trade-closed", async (req, res) => {
   res.json({ ok: true });
   if (!mt5Auth(req, res)) return;
   const { phone, pair, profit, ticket } = req.body;
+  if (isDuplicate(`close_${ticket}`)) return;
 
   const pnl = parseFloat(parseFloat(profit).toFixed(2));
   const tradeId = ticket?.toString();

@@ -9,6 +9,7 @@ const API_KEY = "ftmo_bridge_2024";
 const PHONE = "972547701899";
 
 let lastContent = "";
+const sentEvents = new Set(); // dedup in-process
 
 async function sendEvent(event) {
   const endpoint = {
@@ -18,6 +19,16 @@ async function sendEvent(event) {
   }[event.event];
 
   if (!endpoint) return;
+
+  // Dedup — never send same event+ticket twice
+  const key = `${event.event}_${event.ticket}_${event.pair}`;
+  if (sentEvents.has(key)) {
+    console.log(`[DEDUP] Skipped: ${key}`);
+    return;
+  }
+  sentEvents.add(key);
+  // Auto-clear after 60s
+  setTimeout(() => sentEvents.delete(key), 60000);
 
   try {
     await axios.post(BOT_URL + endpoint, { ...event, key: API_KEY, phone: PHONE });

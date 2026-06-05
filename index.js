@@ -574,7 +574,7 @@ app.post("/api/mt5/trade-opened", async (req, res) => {
 
   await send(target,
     `🔔 *עסקה נפתחה!*\n\n` +
-    `*${pair}* | ${dir}\n` +
+    `*${pair}*\n` +
     `כניסה: ${entry} | SL: ${sl} | TP: ${tp}\n` +
     `נפח: ${volume} lots\n\n` +
     `📓 *למה נכנסת לעסקה הזו?*`

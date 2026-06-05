@@ -79,10 +79,11 @@
       "sl": 1.1601,
       "tp": 1.16456,
       "volume": 2,
-      "checklistPassed": null,
+      "checklistPassed": true,
       "result": null,
       "lesson": null,
-      "whyEntered": "הייתה ירידה מאוד מאוד חדה"
+      "whyEntered": "הייתה ירידה מאוד מאוד חדה",
+      "plan": "רשום לך"
     }
   ]
 }

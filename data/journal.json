@@ -85,6 +85,20 @@
       "whyEntered": "הייתה ירידה מאוד מאוד חדה",
       "plan": "רשום לך",
       "closedAt": "2026-06-05T13:00:05.938Z"
+    },
+    {
+      "id": "465594459",
+      "date": "2026-06-05T13:04:25.794Z",
+      "source": "mt5",
+      "pair": "EURUSD",
+      "trend": "יורד",
+      "entry": 1.15914,
+      "sl": 1.15865,
+      "tp": 1.15985,
+      "volume": 3,
+      "checklistPassed": null,
+      "result": null,
+      "lesson": null
     }
   ]
 }

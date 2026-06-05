@@ -38,6 +38,20 @@
       "pair": "USDJPY",
       "result": -0.25,
       "closedAt": "2026-06-05T12:03:47.431Z"
+    },
+    {
+      "id": "465471840",
+      "date": "2026-06-05T12:09:00.695Z",
+      "source": "mt5",
+      "pair": "USDJPY",
+      "trend": "יורד",
+      "entry": 159.853,
+      "sl": 0,
+      "tp": 0,
+      "volume": 0.02,
+      "checklistPassed": null,
+      "result": null,
+      "lesson": null
     }
   ]
 }

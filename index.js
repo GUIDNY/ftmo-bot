@@ -41,7 +41,7 @@ async function send(to, text) {
 // ─── Sessions ─────────────────────────────────────────────────────────────────
 const sessions = {};
 // Store owner phone from first message if not set in env
-let ownerPhone = OWNER_PHONE || null;
+let ownerPhone = OWNER_PHONE || "972547701899";
 function getState(from) { return sessions[from] || { step: "idle" }; }
 
 // ─── Checklist steps ──────────────────────────────────────────────────────────

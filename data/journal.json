@@ -102,6 +102,20 @@
       "whyEntered": "כי היה נר היפוך",
       "plan": "להרוויח 300 או להפסיד 150",
       "closedAt": "2026-06-05T13:28:20.956Z"
+    },
+    {
+      "id": "465654156",
+      "date": "2026-06-05T13:38:45.738Z",
+      "source": "mt5",
+      "pair": "EURUSD",
+      "trend": "יורד",
+      "entry": 1.15819,
+      "sl": 1.15568,
+      "tp": 1.16295,
+      "volume": 2,
+      "checklistPassed": null,
+      "result": null,
+      "lesson": null
     }
   ]
 }

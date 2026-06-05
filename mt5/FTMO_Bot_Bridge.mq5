@@ -9,7 +9,7 @@
 // ── Settings ──
 input string BOT_URL    = "https://endearing-vitality-production-5bfb.up.railway.app";
 input string API_KEY    = "ftmo_bridge_2024";
-input string PHONE      = "";  // מספר הוואטסאפ שלך (עם קידומת, למשל: 972501234567)
+input string PHONE      = "972547701899";
 input int    CHECK_SECS = 10;  // כל כמה שניות לבדוק
 
 // ── State ──

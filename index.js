@@ -414,6 +414,23 @@ async function handleMessage(from, text) {
 
   if (state.step.startsWith("cl_")) return handleChecklist(from, state, t);
 
+  // ── MT5 trade journal flow ──
+  if (state.step === "mt5_why") {
+    const journal = loadJournal();
+    const trade = journal.trades.find(tr => tr.id === state.tradeId);
+    if (trade) { trade.whyEntered = t; saveJournal(journal); }
+    sessions[from] = { ...state, step: "mt5_plan" };
+    return send(from, `✓ רשמתי.\n\n📋 מה התוכנית שלך לעסקה הזו?\n_(למשל: TP ב-1.1680, SL ב-1.1610, יוצא אם השעה 17:00)_`);
+  }
+
+  if (state.step === "mt5_plan") {
+    const journal = loadJournal();
+    const trade = journal.trades.find(tr => tr.id === state.tradeId);
+    if (trade) { trade.plan = t; trade.checklistPassed = true; saveJournal(journal); }
+    sessions[from] = { step: "idle", lastTradeId: state.tradeId };
+    return send(from, `✅ *נשמר ביומן!*\n\n_תן לעסקה לעבוד. אל תזיז סטופ. אל תגדיל פוזיציה._\n\nבהצלחה 🎯`);
+  }
+
   if (state.step === "closure_result") {
     const amount = parseFloat(t.replace(/[^\d.\-\+]/g, ""));
     if (isNaN(amount)) return send(from, "שלח סכום: *+150* או *-80*");
@@ -427,7 +444,6 @@ async function handleMessage(from, text) {
       ? journal.trades.find(tr => tr.id === state.lastTradeId)
       : journal.trades.filter(tr => tr.result == null).pop();
     if (trade) {
-      trade.result = state.result;
       trade.lesson = t;
       trade.closedAt = new Date().toISOString();
       saveJournal(journal);
@@ -522,22 +538,15 @@ function mt5Auth(req, res) {
 app.post("/api/mt5/trade-opened", async (req, res) => {
   res.json({ ok: true });
   if (!mt5Auth(req, res)) return;
-  const { phone, pair, direction, entry, sl, tp, volume } = req.body;
-  if (!phone) return;
+  const { phone, pair, direction, entry, sl, tp, volume, ticket } = req.body;
 
-  await send(phone,
-    `🔔 *עסקה נפתחה ב-MT5!*\n\n` +
-    `${pair} | ${direction === "לונג" ? "📈" : "📉"} ${direction}\n` +
-    `כניסה: ${entry} | SL: ${sl} | TP: ${tp}\n` +
-    `נפח: ${volume} lots\n\n` +
-    `⚠️ _עשית צ'קליסט לפני הכניסה?_\n` +
-    `שלח *כן* לרישום ביומן או *לא* לתיעוד הפרה.`
-  );
+  const tradeId = ticket?.toString() || randomUUID();
+  const dir = direction === "לונג" ? "📈 לונג" : "📉 שורט";
 
-  // Save to journal as pending
+  // Save to journal
   const journal = loadJournal();
   journal.trades.push({
-    id: req.body.ticket?.toString() || randomUUID(),
+    id: tradeId,
     date: new Date().toISOString(),
     source: "mt5",
     pair, trend: direction === "לונג" ? "עולה" : "יורד",
@@ -546,6 +555,20 @@ app.post("/api/mt5/trade-opened", async (req, res) => {
     result: null, lesson: null,
   });
   saveJournal(journal);
+
+  const target = phone || ownerPhone;
+  if (!target) return;
+
+  // Start journal flow
+  sessions[target] = { step: "mt5_why", tradeId };
+
+  await send(target,
+    `🔔 *עסקה נפתחה!*\n\n` +
+    `*${pair}* | ${dir}\n` +
+    `כניסה: ${entry} | SL: ${sl} | TP: ${tp}\n` +
+    `נפח: ${volume} lots\n\n` +
+    `📓 *למה נכנסת לעסקה הזו?*`
+  );
   console.log(`[MT5] Trade opened: ${pair} ${direction}`);
 });
 
@@ -554,26 +577,30 @@ app.post("/api/mt5/trade-closed", async (req, res) => {
   if (!mt5Auth(req, res)) return;
   const { phone, pair, profit, ticket } = req.body;
 
+  const pnl = parseFloat(parseFloat(profit).toFixed(2));
+  const tradeId = ticket?.toString();
+
   // Update journal
   const journal = loadJournal();
-  const trade = journal.trades.find(t => t.id === ticket?.toString());
+  const trade = journal.trades.find(t => t.id === tradeId);
   if (trade) {
-    trade.result = parseFloat(profit.toFixed(2));
+    trade.result = pnl;
     trade.closedAt = new Date().toISOString();
     saveJournal(journal);
   }
 
-  if (!phone) return;
-  const emoji = profit >= 0 ? "🏆" : "💔";
-  await send(phone,
-    `${emoji} *עסקה נסגרה: ${pair}*\n\n` +
-    `תוצאה: ${profit >= 0 ? "+" : ""}$${parseFloat(profit).toFixed(2)}\n\n` +
+  const target = phone || ownerPhone;
+  if (!target) return;
+
+  const emoji = pnl >= 0 ? "🏆" : "💔";
+  sessions[target] = { step: "closure_lesson", result: pnl, lastTradeId: tradeId };
+
+  await send(target,
+    `${emoji} *${pair} נסגרה*\n\n` +
+    `תוצאה: ${pnl >= 0 ? "+" : ""}$${pnl}\n\n` +
     `📝 מה למדת מהעסקה הזו?`
   );
-
-  // Store phone for lesson follow-up
-  if (phone) sessions[phone] = { step: "closure_lesson", result: parseFloat(profit.toFixed(2)), lastTradeId: ticket?.toString() };
-  console.log(`[MT5] Trade closed: ${pair} P&L: ${profit}`);
+  console.log(`[MT5] Trade closed: ${pair} P&L: ${pnl}`);
 });
 
 app.post("/api/mt5/alert", async (req, res) => {

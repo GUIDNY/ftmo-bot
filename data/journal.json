@@ -1,1 +1,18 @@
-{"trades":[]}
+{
+  "trades": [
+    {
+      "id": "55555",
+      "date": "2026-06-05T12:02:23.968Z",
+      "source": "mt5",
+      "pair": "XAUUSD",
+      "trend": "יורד",
+      "entry": 4465,
+      "sl": 4450,
+      "tp": 4495,
+      "volume": 0.5,
+      "checklistPassed": null,
+      "result": null,
+      "lesson": null
+    }
+  ]
+}

@@ -115,7 +115,8 @@
       "volume": 2,
       "checklistPassed": null,
       "result": null,
-      "lesson": null
+      "lesson": null,
+      "whyEntered": "ירידהקיצונית"
     }
   ]
 }

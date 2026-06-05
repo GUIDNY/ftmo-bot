@@ -96,10 +96,11 @@
       "sl": 1.15865,
       "tp": 1.15985,
       "volume": 3,
-      "checklistPassed": null,
+      "checklistPassed": true,
       "result": null,
       "lesson": null,
-      "whyEntered": "כי היה נר היפוך"
+      "whyEntered": "כי היה נר היפוך",
+      "plan": "להרוויח 300 או להפסיד 150"
     }
   ]
 }

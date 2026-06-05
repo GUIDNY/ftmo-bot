@@ -29,6 +29,14 @@
       "lesson": null,
       "whyEntered": "בדיקה",
       "plan": "אין"
+    },
+    {
+      "id": "465446930",
+      "date": "2026-06-05T12:03:47.431Z",
+      "source": "mt5",
+      "pair": "USDJPY",
+      "result": -0.25,
+      "closedAt": "2026-06-05T12:03:47.431Z"
     }
   ]
 }

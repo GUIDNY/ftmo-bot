@@ -97,10 +97,11 @@
       "tp": 1.15985,
       "volume": 3,
       "checklistPassed": true,
-      "result": null,
+      "result": -174,
       "lesson": null,
       "whyEntered": "כי היה נר היפוך",
-      "plan": "להרוויח 300 או להפסיד 150"
+      "plan": "להרוויח 300 או להפסיד 150",
+      "closedAt": "2026-06-05T13:28:00.748Z"
     }
   ]
 }

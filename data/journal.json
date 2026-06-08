@@ -130,10 +130,11 @@
       "sl": 410.26,
       "tp": 413.29,
       "volume": 300,
-      "checklistPassed": null,
+      "checklistPassed": true,
       "result": null,
       "lesson": null,
-      "whyEntered": "כי היא יקדה"
+      "whyEntered": "כי היא יקדה",
+      "plan": "יחס 1:2"
     }
   ]
 }

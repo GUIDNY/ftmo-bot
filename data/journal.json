@@ -133,20 +133,6 @@
       "checklistPassed": null,
       "result": null,
       "lesson": null
-    },
-    {
-      "id": "999999",
-      "date": "2026-06-08T18:10:50.304Z",
-      "source": "mt5",
-      "pair": "TEST",
-      "trend": "עולה",
-      "entry": 1.2345,
-      "sl": 1.23,
-      "tp": 1.24,
-      "volume": 0.1,
-      "checklistPassed": null,
-      "result": null,
-      "lesson": null
     }
   ]
 }

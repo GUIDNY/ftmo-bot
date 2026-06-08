@@ -133,20 +133,6 @@
       "checklistPassed": null,
       "result": null,
       "lesson": null
-    },
-    {
-      "id": "467415255",
-      "date": "2026-06-08T18:46:20.857Z",
-      "source": "mt5",
-      "pair": "MSFT",
-      "trend": "יורד",
-      "entry": 411.48,
-      "sl": 410.26,
-      "tp": 413.29,
-      "volume": 300,
-      "checklistPassed": null,
-      "result": null,
-      "lesson": null
     }
   ]
 }

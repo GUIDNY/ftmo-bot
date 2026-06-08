@@ -132,7 +132,8 @@
       "volume": 300,
       "checklistPassed": null,
       "result": null,
-      "lesson": null
+      "lesson": null,
+      "whyEntered": "כי היא יקדה"
     }
   ]
 }
